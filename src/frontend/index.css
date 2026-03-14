@@ -1,0 +1,134 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,700;12..96,800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0.98 0.002 240;
+    --foreground: 0.18 0.012 255;
+    --card: 1 0 0;
+    --card-foreground: 0.18 0.012 255;
+    --popover: 1 0 0;
+    --popover-foreground: 0.18 0.012 255;
+    --primary: 0.52 0.14 186;
+    --primary-foreground: 1 0 0;
+    --secondary: 0.95 0.008 240;
+    --secondary-foreground: 0.28 0.02 255;
+    --muted: 0.95 0.006 240;
+    --muted-foreground: 0.52 0.02 255;
+    --accent: 0.93 0.04 186;
+    --accent-foreground: 0.38 0.12 186;
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 1 0 0;
+    --border: 0.88 0.01 240;
+    --input: 0.88 0.01 240;
+    --ring: 0.52 0.14 186;
+    --radius: 0.625rem;
+    --chart-1: 0.52 0.14 186;
+    --chart-2: 0.65 0.18 160;
+    --chart-3: 0.62 0.18 45;
+    --chart-4: 0.55 0.22 25;
+    --chart-5: 0.72 0.16 320;
+    --sidebar: 0.16 0.016 255;
+    --sidebar-foreground: 0.88 0.01 240;
+    --sidebar-primary: 0.52 0.14 186;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.22 0.02 255;
+    --sidebar-accent-foreground: 0.88 0.01 240;
+    --sidebar-border: 0.26 0.02 255;
+    --sidebar-ring: 0.52 0.14 186;
+
+    /* Custom semantic tokens */
+    --success: 0.62 0.18 145;
+    --success-foreground: 1 0 0;
+    --success-bg: 0.95 0.06 145;
+    --warning: 0.72 0.17 65;
+    --warning-foreground: 0.18 0.06 65;
+    --warning-bg: 0.97 0.06 80;
+    --absent: 0.55 0.22 25;
+    --absent-bg: 0.97 0.04 25;
+  }
+
+  .dark {
+    --background: 0.14 0.012 255;
+    --foreground: 0.92 0.006 240;
+    --card: 0.18 0.014 255;
+    --card-foreground: 0.92 0.006 240;
+    --popover: 0.18 0.014 255;
+    --popover-foreground: 0.92 0.006 240;
+    --primary: 0.62 0.16 186;
+    --primary-foreground: 0.12 0.01 255;
+    --secondary: 0.22 0.016 255;
+    --secondary-foreground: 0.82 0.008 240;
+    --muted: 0.22 0.016 255;
+    --muted-foreground: 0.58 0.02 255;
+    --accent: 0.28 0.06 186;
+    --accent-foreground: 0.78 0.12 186;
+    --destructive: 0.55 0.22 25;
+    --destructive-foreground: 1 0 0;
+    --border: 0.28 0.018 255;
+    --input: 0.28 0.018 255;
+    --ring: 0.62 0.16 186;
+    --success: 0.65 0.18 145;
+    --success-bg: 0.22 0.06 145;
+    --warning: 0.72 0.17 65;
+    --warning-bg: 0.24 0.06 65;
+    --absent: 0.65 0.22 25;
+    --absent-bg: 0.24 0.06 25;
+    --chart-1: 0.62 0.16 186;
+    --chart-2: 0.65 0.18 145;
+    --chart-3: 0.72 0.17 65;
+    --chart-4: 0.65 0.22 25;
+    --chart-5: 0.72 0.16 320;
+    --sidebar: 0.12 0.014 255;
+    --sidebar-foreground: 0.88 0.01 240;
+    --sidebar-primary: 0.62 0.16 186;
+    --sidebar-primary-foreground: 0.12 0.01 255;
+    --sidebar-accent: 0.22 0.02 255;
+    --sidebar-accent-foreground: 0.88 0.01 240;
+    --sidebar-border: 0.26 0.02 255;
+    --sidebar-ring: 0.62 0.16 186;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+    -webkit-font-smoothing: antialiased;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Bricolage Grotesque', sans-serif;
+  }
+}
+
+@layer utilities {
+  .text-success { color: oklch(var(--success)); }
+  .bg-success { background-color: oklch(var(--success)); }
+  .text-success-foreground { color: oklch(var(--success-foreground)); }
+  .bg-success-bg { background-color: oklch(var(--success-bg)); }
+  .text-warning { color: oklch(var(--warning)); }
+  .bg-warning-bg { background-color: oklch(var(--warning-bg)); }
+  .text-warning-foreground { color: oklch(var(--warning-foreground)); }
+  .bg-absent-bg { background-color: oklch(var(--absent-bg)); }
+  .text-absent { color: oklch(var(--absent)); }
+}
+
+@media print {
+  header, footer, .no-print {
+    display: none !important;
+  }
+  body {
+    background: white !important;
+    color: black !important;
+  }
+  .print-table {
+    display: block !important;
+  }
+}
