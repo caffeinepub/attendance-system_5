@@ -1,5 +1,5 @@
 import { Toaster } from "@/components/ui/sonner";
-import { RouterProvider, createRouter } from "@tanstack/react-router";
+import { Outlet, RouterProvider, createRouter } from "@tanstack/react-router";
 import { createRootRoute, createRoute } from "@tanstack/react-router";
 import Navbar from "./components/Navbar";
 import AdminPage from "./pages/AdminPage";
@@ -12,7 +12,7 @@ const rootRoute = createRootRoute({
     <div className="min-h-screen bg-background flex flex-col">
       <Navbar />
       <main className="flex-1">
-        <RouterProvider router={router} />
+        <Outlet />
       </main>
       <footer className="border-t border-border py-4 text-center text-sm text-muted-foreground">
         © {new Date().getFullYear()}. Built with love using{" "}
