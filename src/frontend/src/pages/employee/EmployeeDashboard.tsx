@@ -19,9 +19,10 @@ import {
   DollarSign,
   IndianRupee,
   LogOut,
+  TrendingUp,
   XCircle,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useAppContext } from "../../context/AppContext";
 import {
   formatDate,
@@ -29,7 +30,21 @@ import {
   useSalaryByEmployee,
 } from "../../hooks/useQueries";
 
-// Extract time from note field if it looks like a time string
+const MONTHS = [
+  "January",
+  "February",
+  "March",
+  "April",
+  "May",
+  "June",
+  "July",
+  "August",
+  "September",
+  "October",
+  "November",
+  "December",
+];
+
 function getTimeFromNote(note: string | undefined): string {
   if (!note) return "—";
   const timeMatch = note.match(/\d{1,2}:\d{2}\s?[AP]M/i);
@@ -39,6 +54,10 @@ function getTimeFromNote(note: string | undefined): string {
 export default function EmployeeDashboard() {
   const navigate = useNavigate();
   const { currentEmployee, setCurrentEmployee } = useAppContext();
+
+  const now = new Date();
+  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1); // 1-12
+  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
 
   useEffect(() => {
     if (!currentEmployee) {
@@ -55,12 +74,32 @@ export default function EmployeeDashboard() {
 
   if (!currentEmployee) return null;
 
-  const daysPresent =
-    attendance?.filter((a) => a.status === "present").length ?? 0;
-  const daysAbsent =
-    attendance?.filter((a) => a.status === "absent").length ?? 0;
   const dailySalary = Number(currentEmployee.dailySalary);
-  // totalSalaryThisMonth removed - using dailySalary * 26 instead
+
+  // Build YYYY-MM prefix for filtering
+  const monthPrefix = `${selectedYear}-${String(selectedMonth).padStart(2, "0")}`;
+
+  const filteredAttendance = (attendance ?? []).filter((rec) =>
+    rec.date.startsWith(monthPrefix),
+  );
+
+  const daysPresent = filteredAttendance.filter(
+    (a) => a.status === "present",
+  ).length;
+  const daysAbsent = filteredAttendance.filter(
+    (a) => a.status === "absent",
+  ).length;
+  const earnedSalary = daysPresent * dailySalary;
+  const monthlySalary = dailySalary * 26;
+
+  const currentYr = now.getFullYear();
+  const years = [
+    currentYr - 2,
+    currentYr - 1,
+    currentYr,
+    currentYr + 1,
+    currentYr + 2,
+  ];
 
   const handleLogout = () => {
     setCurrentEmployee(null);
@@ -97,7 +136,7 @@ export default function EmployeeDashboard() {
       </header>
 
       <main className="flex-1 p-6 max-w-5xl mx-auto w-full">
-        <div className="mb-8">
+        <div className="mb-6">
           <div className="flex items-center gap-4">
             <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-display font-bold text-primary">
               {currentEmployee.name.charAt(0).toUpperCase()}
@@ -114,8 +153,44 @@ export default function EmployeeDashboard() {
           </div>
         </div>
 
-        {/* 4 key stats in 2x2 grid */}
-        <div className="grid grid-cols-2 gap-4 mb-8">
+        {/* Month / Year Filter */}
+        <div className="flex flex-wrap items-center gap-3 mb-6 p-4 rounded-xl border border-border bg-card">
+          <Calendar className="w-4 h-4 text-primary shrink-0" />
+          <span className="text-sm font-medium text-foreground">
+            Filter by Month:
+          </span>
+          <select
+            data-ocid="emp-dashboard.month.select"
+            value={selectedMonth}
+            onChange={(e) => setSelectedMonth(Number(e.target.value))}
+            className="h-8 px-2 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {MONTHS.map((name, idx) => (
+              <option key={name} value={idx + 1}>
+                {name}
+              </option>
+            ))}
+          </select>
+          <select
+            data-ocid="emp-dashboard.year.select"
+            value={selectedYear}
+            onChange={(e) => setSelectedYear(Number(e.target.value))}
+            className="h-8 px-2 rounded-md border border-input bg-background text-sm text-foreground focus:outline-none focus:ring-1 focus:ring-ring"
+          >
+            {years.map((yr) => (
+              <option key={yr} value={yr}>
+                {yr}
+              </option>
+            ))}
+          </select>
+          <span className="ml-auto text-sm font-semibold text-primary">
+            Showing: {MONTHS[selectedMonth - 1]} {selectedYear}
+          </span>
+        </div>
+
+        {/* Stats grid: 2x3 (or responsive wrapping 2 cols) */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+          {/* Days Present */}
           <Card className="border-green-500/20 bg-green-500/5">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
@@ -135,6 +210,7 @@ export default function EmployeeDashboard() {
             </CardContent>
           </Card>
 
+          {/* Days Absent */}
           <Card className="border-red-500/20 bg-red-500/5">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
@@ -154,6 +230,27 @@ export default function EmployeeDashboard() {
             </CardContent>
           </Card>
 
+          {/* Earned This Month */}
+          <Card className="border-emerald-500/20 bg-emerald-500/5 col-span-2 lg:col-span-1">
+            <CardContent className="p-5">
+              <div className="flex items-center justify-between mb-3">
+                <div className="w-10 h-10 rounded-full bg-emerald-500/15 flex items-center justify-center">
+                  <TrendingUp className="w-5 h-5 text-emerald-400" />
+                </div>
+                <span className="text-xs text-muted-foreground uppercase tracking-wide">
+                  Earned
+                </span>
+              </div>
+              <div className="font-display font-bold text-3xl text-foreground">
+                ₹{earnedSalary.toLocaleString()}
+              </div>
+              <div className="text-sm text-muted-foreground mt-1">
+                Earned — {MONTHS[selectedMonth - 1]}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Monthly Salary */}
           <Card className="border-blue-500/20 bg-blue-500/5">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
@@ -165,7 +262,7 @@ export default function EmployeeDashboard() {
                 </span>
               </div>
               <div className="font-display font-bold text-3xl text-foreground">
-                ₹{(dailySalary * 26).toLocaleString()}
+                ₹{monthlySalary.toLocaleString()}
               </div>
               <div className="text-sm text-muted-foreground mt-1">
                 Monthly Salary
@@ -173,6 +270,7 @@ export default function EmployeeDashboard() {
             </CardContent>
           </Card>
 
+          {/* Salary Per Day */}
           <Card className="border-purple-500/20 bg-purple-500/5">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-3">
@@ -194,11 +292,12 @@ export default function EmployeeDashboard() {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Attendance Table (filtered) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
                 <Calendar className="w-5 h-5 text-primary" />
-                Attendance History
+                Attendance — {MONTHS[selectedMonth - 1]} {selectedYear}
               </CardTitle>
             </CardHeader>
             <CardContent className="p-0">
@@ -211,15 +310,16 @@ export default function EmployeeDashboard() {
                     <Skeleton key={i} className="h-10 w-full" />
                   ))}
                 </div>
-              ) : !attendance?.length ? (
+              ) : !filteredAttendance.length ? (
                 <div
                   data-ocid="emp-dashboard.attendance.empty_state"
                   className="p-8 text-center text-muted-foreground"
                 >
-                  No attendance records found.
+                  No attendance records for {MONTHS[selectedMonth - 1]}{" "}
+                  {selectedYear}.
                 </div>
               ) : (
-                <Table>
+                <Table data-ocid="emp-dashboard.attendance.table">
                   <TableHeader>
                     <TableRow>
                       <TableHead>Date</TableHead>
@@ -228,9 +328,8 @@ export default function EmployeeDashboard() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {[...attendance]
+                    {[...filteredAttendance]
                       .sort((a, b) => b.date.localeCompare(a.date))
-                      .slice(0, 30)
                       .map((rec, idx) => (
                         <TableRow
                           key={rec.id}
@@ -266,6 +365,7 @@ export default function EmployeeDashboard() {
             </CardContent>
           </Card>
 
+          {/* Salary Payment History (unfiltered) */}
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 font-display">
