@@ -10,6 +10,51 @@ import { useActor } from "./useActor";
 
 export type { Employee, AttendanceRecord, Holiday, SalaryPayment };
 
+async function compressPhoto(file: File): Promise<Uint8Array<ArrayBuffer>> {
+  const MAX_DIM = 200;
+  const QUALITY = 0.7;
+
+  const bitmap = await createImageBitmap(file);
+  const { width, height } = bitmap;
+
+  const scale = Math.min(MAX_DIM / width, MAX_DIM / height, 1);
+  const targetW = Math.round(width * scale);
+  const targetH = Math.round(height * scale);
+
+  let compressedBlob: Blob;
+
+  if (typeof OffscreenCanvas !== "undefined") {
+    const canvas = new OffscreenCanvas(targetW, targetH);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get canvas context");
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+    bitmap.close();
+    compressedBlob = await canvas.convertToBlob({
+      type: "image/jpeg",
+      quality: QUALITY,
+    });
+  } else {
+    const canvas = document.createElement("canvas");
+    canvas.width = targetW;
+    canvas.height = targetH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) throw new Error("Could not get canvas context");
+    ctx.drawImage(bitmap, 0, 0, targetW, targetH);
+    bitmap.close();
+    compressedBlob = await new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (b) => (b ? resolve(b) : reject(new Error("toBlob failed"))),
+        "image/jpeg",
+        QUALITY,
+      );
+    });
+  }
+
+  return new Uint8Array(
+    await compressedBlob.arrayBuffer(),
+  ) as Uint8Array<ArrayBuffer>;
+}
+
 export function useEmployees() {
   const { actor, isFetching } = useActor();
   return useQuery<Employee[]>({
@@ -147,7 +192,7 @@ export function useRegisterEmployee() {
       photoFile: File;
     }) => {
       if (!actor) throw new Error("Not connected");
-      const bytes = new Uint8Array(await photoFile.arrayBuffer());
+      const bytes = await compressPhoto(photoFile);
       const blob = ExternalBlob.fromBytes(bytes);
       return actor.registerEmployee(
         employeeId,
