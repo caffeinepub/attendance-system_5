@@ -2,62 +2,88 @@ import Time "mo:core/Time";
 import Int "mo:core/Int";
 import Map "mo:core/Map";
 import Text "mo:core/Text";
-import Iter "mo:core/Iter";
-import Runtime "mo:core/Runtime";
-import Order "mo:core/Order";
+import Nat "mo:core/Nat";
 import Array "mo:core/Array";
+import Iter "mo:core/Iter";
 import MixinStorage "blob-storage/Mixin";
 import Storage "blob-storage/Storage";
+import Runtime "mo:core/Runtime";
+import Order "mo:core/Order";
+
+import List "mo:core/List";
+
 
 actor {
   include MixinStorage();
 
+  // Types
   type Employee = {
     id : Text;
+    employeeId : Text;
     name : Text;
     department : Text;
+    dailySalary : Nat;
+    faceDescriptor : Text;
     photo : Storage.ExternalBlob;
     createdAt : Int;
-  };
-
-  module Employee {
-    public func compare(e1 : Employee, e2 : Employee) : Order.Order {
-      e1.name.compare(e2.name);
-    };
-
-    public func compareByDepartment(e1 : Employee, e2 : Employee) : Order.Order {
-      switch (e1.department.compare(e2.department)) {
-        case (#equal) { e1.name.compare(e2.name) };
-        case (order) { order };
-      };
-    };
   };
 
   type AttendanceRecord = {
     id : Text;
     employeeId : Text;
-    employeeName : Text;
-    department : Text;
-    checkInTime : Int;
-    photo : Storage.ExternalBlob;
+    date : Text;
     status : Text;
+    checkInTime : Int;
+    note : Text;
   };
 
-  module AttendanceRecord {
-    public func compareByCheckInTime(a1 : AttendanceRecord, a2 : AttendanceRecord) : Order.Order {
-      Int.compare(a1.checkInTime, a2.checkInTime);
-    };
+  type Holiday = {
+    id : Nat;
+    date : Text;
+    reason : Text;
+    createdAt : Int;
   };
 
+  type SalaryPayment = {
+    id : Nat;
+    employeeId : Text;
+    amount : Nat;
+    paidDate : Text;
+    note : Text;
+    createdAt : Int;
+  };
+
+  // Employee Storage
   let employees = Map.empty<Text, Employee>();
+
+  // Attendance Storage
   let attendance = Map.empty<Text, AttendanceRecord>();
 
-  public shared ({ caller }) func registerEmployee(name : Text, department : Text, photo : Storage.ExternalBlob) : async Text {
-    let id = name.concat(department).concat(Time.now().toText());
+  // Holiday Storage
+  let holidays = Map.empty<Nat, Holiday>();
+  var holidayCounter = 0;
+
+  // Salary Payment Storage
+  let salaryPayments = Map.empty<Nat, SalaryPayment>();
+  var salaryPaymentCounter = 0;
+
+  // Employee Methods
+  public shared ({ caller }) func registerEmployee(
+    employeeId : Text,
+    name : Text,
+    department : Text,
+    dailySalary : Nat,
+    faceDescriptor : Text,
+    photo : Storage.ExternalBlob,
+  ) : async Text {
+    let id = employeeId.concat(Time.now().toText());
     let employee : Employee = {
       id;
+      employeeId;
       name;
       department;
+      dailySalary;
+      faceDescriptor;
       photo;
       createdAt = Time.now();
     };
@@ -65,12 +91,28 @@ actor {
     id;
   };
 
-  public query ({ caller }) func listAllEmployees() : async [Employee] {
-    employees.values().toArray().sort();
-  };
-
-  public query ({ caller }) func listEmployeesByDepartment() : async [Employee] {
-    employees.values().toArray().sort(Employee.compareByDepartment);
+  public shared ({ caller }) func updateEmployee(
+    id : Text,
+    name : Text,
+    department : Text,
+    dailySalary : Nat,
+    faceDescriptor : Text,
+    photo : Storage.ExternalBlob,
+  ) : async () {
+    switch (employees.get(id)) {
+      case (null) { Runtime.trap("Employee not found") };
+      case (?existing) {
+        let updated : Employee = {
+          existing with
+          name;
+          department;
+          dailySalary;
+          faceDescriptor;
+          photo;
+        };
+        employees.add(id, updated);
+      };
+    };
   };
 
   public shared ({ caller }) func deleteEmployee(id : Text) : async () {
@@ -80,35 +122,46 @@ actor {
     employees.remove(id);
   };
 
+  public query ({ caller }) func listAllEmployees() : async [Employee] {
+    employees.values().toArray();
+  };
+
+  public query ({ caller }) func getEmployeeByEmployeeId(employeeId : Text) : async ?Employee {
+    let iter = employees.values().toArray().values();
+    iter.find(func(e) { e.employeeId == employeeId });
+  };
+
+  // Attendance Methods
   public shared ({ caller }) func addAttendanceRecord(
     employeeId : Text,
-    employeeName : Text,
-    department : Text,
-    checkInTime : Int,
-    photo : Storage.ExternalBlob,
+    date : Text,
     status : Text,
+    checkInTime : Int,
+    note : Text,
   ) : async Text {
     let id = employeeId.concat("_").concat(Time.now().toText());
     let record : AttendanceRecord = {
       id;
       employeeId;
-      employeeName;
-      department;
-      checkInTime;
-      photo;
+      date;
       status;
+      checkInTime;
+      note;
     };
     attendance.add(id, record);
     id;
   };
 
-  public query ({ caller }) func getAttendanceByDate(date : Text) : async [AttendanceRecord] {
-    let dayRecords = attendance.values().toArray().filter(
-      func(record) {
-        getDateString(record.checkInTime) == date;
-      }
+  public query ({ caller }) func getAttendanceByEmployeeId(employeeId : Text) : async [AttendanceRecord] {
+    attendance.values().toArray().filter(
+      func(record) { record.employeeId == employeeId }
     );
-    dayRecords.sort(AttendanceRecord.compareByCheckInTime);
+  };
+
+  public query ({ caller }) func getAttendanceByDate(date : Text) : async [AttendanceRecord] {
+    attendance.values().toArray().filter(
+      func(record) { record.date == date }
+    );
   };
 
   public query ({ caller }) func getAllAttendanceRecords() : async [AttendanceRecord] {
@@ -122,42 +175,66 @@ actor {
     attendance.remove(id);
   };
 
-  public query ({ caller }) func getDailySummary(date : Text) : async {
-    presentCount : Nat;
-    lateCount : Nat;
-    absentEmployees : [Text];
-  } {
-    let records = attendance.values().toArray().filter(
-      func(record) {
-        getDateString(record.checkInTime) == date;
-      }
-    );
-
-    var present = 0;
-    var late = 0;
-    for (record in records.values()) {
-      switch (record.status) {
-        case ("present") { present += 1 };
-        case ("late") { late += 1 };
-        case (_) {};
-      };
+  // Holiday Methods
+  public shared ({ caller }) func addHoliday(date : Text, reason : Text) : async Nat {
+    let id = holidayCounter;
+    holidayCounter += 1;
+    let holiday : Holiday = {
+      id;
+      date;
+      reason;
+      createdAt = Time.now();
     };
-
-    let allEmployees = employees.values().toArray();
-    let absent = allEmployees.filter(
-      func(emp) {
-        not records.any(func(rec) { rec.employeeId == emp.id });
-      }
-    );
-
-    {
-      presentCount = present;
-      lateCount = late;
-      absentEmployees = absent.map(func(emp) { emp.name });
-    };
+    holidays.add(id, holiday);
+    id;
   };
 
-  func getDateString(timestamp : Int) : Text {
-    timestamp.toText();
+  public query ({ caller }) func listHolidays() : async [Holiday] {
+    holidays.values().toArray();
+  };
+
+  public shared ({ caller }) func deleteHoliday(id : Nat) : async () {
+    if (not holidays.containsKey(id)) {
+      Runtime.trap("Holiday not found");
+    };
+    holidays.remove(id);
+  };
+
+  // Salary Payment Methods
+  public shared ({ caller }) func addSalaryPayment(
+    employeeId : Text,
+    amount : Nat,
+    paidDate : Text,
+    note : Text,
+  ) : async Nat {
+    let id = salaryPaymentCounter;
+    salaryPaymentCounter += 1;
+    let payment : SalaryPayment = {
+      id;
+      employeeId;
+      amount;
+      paidDate;
+      note;
+      createdAt = Time.now();
+    };
+    salaryPayments.add(id, payment);
+    id;
+  };
+
+  public query ({ caller }) func getSalaryPaymentsByEmployee(employeeId : Text) : async [SalaryPayment] {
+    salaryPayments.values().toArray().filter(
+      func(payment) { payment.employeeId == employeeId }
+    );
+  };
+
+  public query ({ caller }) func getAllSalaryPayments() : async [SalaryPayment] {
+    salaryPayments.values().toArray();
+  };
+
+  public shared ({ caller }) func deleteSalaryPayment(id : Nat) : async () {
+    if (not salaryPayments.containsKey(id)) {
+      Runtime.trap("Salary payment not found");
+    };
+    salaryPayments.remove(id);
   };
 };

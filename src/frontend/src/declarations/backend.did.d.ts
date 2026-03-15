@@ -13,20 +13,36 @@ import type { Principal } from '@icp-sdk/core/principal';
 export interface AttendanceRecord {
   'id' : string,
   'status' : string,
-  'employeeName' : string,
+  'date' : string,
+  'note' : string,
   'checkInTime' : bigint,
   'employeeId' : string,
-  'photo' : ExternalBlob,
-  'department' : string,
 }
 export interface Employee {
   'id' : string,
   'name' : string,
   'createdAt' : bigint,
+  'employeeId' : string,
+  'faceDescriptor' : string,
   'photo' : ExternalBlob,
   'department' : string,
+  'dailySalary' : bigint,
 }
 export type ExternalBlob = Uint8Array;
+export interface Holiday {
+  'id' : bigint,
+  'date' : string,
+  'createdAt' : bigint,
+  'reason' : string,
+}
+export interface SalaryPayment {
+  'id' : bigint,
+  'note' : string,
+  'createdAt' : bigint,
+  'paidDate' : string,
+  'employeeId' : string,
+  'amount' : bigint,
+}
 export interface _CaffeineStorageCreateCertificateResult {
   'method' : string,
   'blob_hash' : string,
@@ -55,24 +71,31 @@ export interface _SERVICE {
   >,
   '_caffeineStorageUpdateGatewayPrincipals' : ActorMethod<[], undefined>,
   'addAttendanceRecord' : ActorMethod<
-    [string, string, string, bigint, ExternalBlob, string],
+    [string, string, string, bigint, string],
     string
   >,
+  'addHoliday' : ActorMethod<[string, string], bigint>,
+  'addSalaryPayment' : ActorMethod<[string, bigint, string, string], bigint>,
   'deleteAttendanceRecord' : ActorMethod<[string], undefined>,
   'deleteEmployee' : ActorMethod<[string], undefined>,
+  'deleteHoliday' : ActorMethod<[bigint], undefined>,
+  'deleteSalaryPayment' : ActorMethod<[bigint], undefined>,
   'getAllAttendanceRecords' : ActorMethod<[], Array<AttendanceRecord>>,
+  'getAllSalaryPayments' : ActorMethod<[], Array<SalaryPayment>>,
   'getAttendanceByDate' : ActorMethod<[string], Array<AttendanceRecord>>,
-  'getDailySummary' : ActorMethod<
-    [string],
-    {
-      'presentCount' : bigint,
-      'absentEmployees' : Array<string>,
-      'lateCount' : bigint,
-    }
-  >,
+  'getAttendanceByEmployeeId' : ActorMethod<[string], Array<AttendanceRecord>>,
+  'getEmployeeByEmployeeId' : ActorMethod<[string], [] | [Employee]>,
+  'getSalaryPaymentsByEmployee' : ActorMethod<[string], Array<SalaryPayment>>,
   'listAllEmployees' : ActorMethod<[], Array<Employee>>,
-  'listEmployeesByDepartment' : ActorMethod<[], Array<Employee>>,
-  'registerEmployee' : ActorMethod<[string, string, ExternalBlob], string>,
+  'listHolidays' : ActorMethod<[], Array<Holiday>>,
+  'registerEmployee' : ActorMethod<
+    [string, string, string, bigint, string, ExternalBlob],
+    string
+  >,
+  'updateEmployee' : ActorMethod<
+    [string, string, string, bigint, string, ExternalBlob],
+    undefined
+  >,
 }
 export declare const idlService: IDL.ServiceClass;
 export declare const idlInitArgs: IDL.Type[];

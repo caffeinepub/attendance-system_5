@@ -89,32 +89,48 @@ export class ExternalBlob {
         return this;
     }
 }
+export interface _CaffeineStorageRefillInformation {
+    proposed_top_up_amount?: bigint;
+}
+export interface SalaryPayment {
+    id: bigint;
+    note: string;
+    createdAt: bigint;
+    paidDate: string;
+    employeeId: string;
+    amount: bigint;
+}
 export interface Employee {
     id: string;
     name: string;
     createdAt: bigint;
+    employeeId: string;
+    faceDescriptor: string;
     photo: ExternalBlob;
     department: string;
+    dailySalary: bigint;
 }
 export interface _CaffeineStorageCreateCertificateResult {
     method: string;
     blob_hash: string;
 }
+export interface Holiday {
+    id: bigint;
+    date: string;
+    createdAt: bigint;
+    reason: string;
+}
 export interface AttendanceRecord {
     id: string;
     status: string;
-    employeeName: string;
+    date: string;
+    note: string;
     checkInTime: bigint;
     employeeId: string;
-    photo: ExternalBlob;
-    department: string;
 }
 export interface _CaffeineStorageRefillResult {
     success?: boolean;
     topped_up_amount?: bigint;
-}
-export interface _CaffeineStorageRefillInformation {
-    proposed_top_up_amount?: bigint;
 }
 export interface backendInterface {
     _caffeineStorageBlobIsLive(hash: Uint8Array): Promise<boolean>;
@@ -123,21 +139,25 @@ export interface backendInterface {
     _caffeineStorageCreateCertificate(blobHash: string): Promise<_CaffeineStorageCreateCertificateResult>;
     _caffeineStorageRefillCashier(refillInformation: _CaffeineStorageRefillInformation | null): Promise<_CaffeineStorageRefillResult>;
     _caffeineStorageUpdateGatewayPrincipals(): Promise<void>;
-    addAttendanceRecord(employeeId: string, employeeName: string, department: string, checkInTime: bigint, photo: ExternalBlob, status: string): Promise<string>;
+    addAttendanceRecord(employeeId: string, date: string, status: string, checkInTime: bigint, note: string): Promise<string>;
+    addHoliday(date: string, reason: string): Promise<bigint>;
+    addSalaryPayment(employeeId: string, amount: bigint, paidDate: string, note: string): Promise<bigint>;
     deleteAttendanceRecord(id: string): Promise<void>;
     deleteEmployee(id: string): Promise<void>;
+    deleteHoliday(id: bigint): Promise<void>;
+    deleteSalaryPayment(id: bigint): Promise<void>;
     getAllAttendanceRecords(): Promise<Array<AttendanceRecord>>;
+    getAllSalaryPayments(): Promise<Array<SalaryPayment>>;
     getAttendanceByDate(date: string): Promise<Array<AttendanceRecord>>;
-    getDailySummary(date: string): Promise<{
-        presentCount: bigint;
-        absentEmployees: Array<string>;
-        lateCount: bigint;
-    }>;
+    getAttendanceByEmployeeId(employeeId: string): Promise<Array<AttendanceRecord>>;
+    getEmployeeByEmployeeId(employeeId: string): Promise<Employee | null>;
+    getSalaryPaymentsByEmployee(employeeId: string): Promise<Array<SalaryPayment>>;
     listAllEmployees(): Promise<Array<Employee>>;
-    listEmployeesByDepartment(): Promise<Array<Employee>>;
-    registerEmployee(name: string, department: string, photo: ExternalBlob): Promise<string>;
+    listHolidays(): Promise<Array<Holiday>>;
+    registerEmployee(employeeId: string, name: string, department: string, dailySalary: bigint, faceDescriptor: string, photo: ExternalBlob): Promise<string>;
+    updateEmployee(id: string, name: string, department: string, dailySalary: bigint, faceDescriptor: string, photo: ExternalBlob): Promise<void>;
 }
-import type { AttendanceRecord as _AttendanceRecord, Employee as _Employee, ExternalBlob as _ExternalBlob, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
+import type { Employee as _Employee, ExternalBlob as _ExternalBlob, _CaffeineStorageRefillInformation as __CaffeineStorageRefillInformation, _CaffeineStorageRefillResult as __CaffeineStorageRefillResult } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
     async _caffeineStorageBlobIsLive(arg0: Uint8Array): Promise<boolean> {
@@ -224,17 +244,45 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async addAttendanceRecord(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: ExternalBlob, arg5: string): Promise<string> {
+    async addAttendanceRecord(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string): Promise<string> {
         if (this.processError) {
             try {
-                const result = await this.actor.addAttendanceRecord(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg4), arg5);
+                const result = await this.actor.addAttendanceRecord(arg0, arg1, arg2, arg3, arg4);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.addAttendanceRecord(arg0, arg1, arg2, arg3, await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg4), arg5);
+            const result = await this.actor.addAttendanceRecord(arg0, arg1, arg2, arg3, arg4);
+            return result;
+        }
+    }
+    async addHoliday(arg0: string, arg1: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addHoliday(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addHoliday(arg0, arg1);
+            return result;
+        }
+    }
+    async addSalaryPayment(arg0: string, arg1: bigint, arg2: string, arg3: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.addSalaryPayment(arg0, arg1, arg2, arg3);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.addSalaryPayment(arg0, arg1, arg2, arg3);
             return result;
         }
     }
@@ -266,49 +314,115 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getAllAttendanceRecords(): Promise<Array<AttendanceRecord>> {
+    async deleteHoliday(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.getAllAttendanceRecords();
-                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAllAttendanceRecords();
-            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getAttendanceByDate(arg0: string): Promise<Array<AttendanceRecord>> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getAttendanceByDate(arg0);
-                return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getAttendanceByDate(arg0);
-            return from_candid_vec_n9(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getDailySummary(arg0: string): Promise<{
-        presentCount: bigint;
-        absentEmployees: Array<string>;
-        lateCount: bigint;
-    }> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getDailySummary(arg0);
+                const result = await this.actor.deleteHoliday(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.getDailySummary(arg0);
+            const result = await this.actor.deleteHoliday(arg0);
+            return result;
+        }
+    }
+    async deleteSalaryPayment(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteSalaryPayment(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteSalaryPayment(arg0);
+            return result;
+        }
+    }
+    async getAllAttendanceRecords(): Promise<Array<AttendanceRecord>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllAttendanceRecords();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllAttendanceRecords();
+            return result;
+        }
+    }
+    async getAllSalaryPayments(): Promise<Array<SalaryPayment>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAllSalaryPayments();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAllSalaryPayments();
+            return result;
+        }
+    }
+    async getAttendanceByDate(arg0: string): Promise<Array<AttendanceRecord>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAttendanceByDate(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAttendanceByDate(arg0);
+            return result;
+        }
+    }
+    async getAttendanceByEmployeeId(arg0: string): Promise<Array<AttendanceRecord>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getAttendanceByEmployeeId(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getAttendanceByEmployeeId(arg0);
+            return result;
+        }
+    }
+    async getEmployeeByEmployeeId(arg0: string): Promise<Employee | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getEmployeeByEmployeeId(arg0);
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getEmployeeByEmployeeId(arg0);
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getSalaryPaymentsByEmployee(arg0: string): Promise<Array<SalaryPayment>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getSalaryPaymentsByEmployee(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getSalaryPaymentsByEmployee(arg0);
             return result;
         }
     }
@@ -316,52 +430,63 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.listAllEmployees();
-                return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.listAllEmployees();
-            return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n12(this._uploadFile, this._downloadFile, result);
         }
     }
-    async listEmployeesByDepartment(): Promise<Array<Employee>> {
+    async listHolidays(): Promise<Array<Holiday>> {
         if (this.processError) {
             try {
-                const result = await this.actor.listEmployeesByDepartment();
-                return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.listEmployeesByDepartment();
-            return from_candid_vec_n13(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async registerEmployee(arg0: string, arg1: string, arg2: ExternalBlob): Promise<string> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.registerEmployee(arg0, arg1, await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg2));
+                const result = await this.actor.listHolidays();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.registerEmployee(arg0, arg1, await to_candid_ExternalBlob_n8(this._uploadFile, this._downloadFile, arg2));
+            const result = await this.actor.listHolidays();
+            return result;
+        }
+    }
+    async registerEmployee(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: ExternalBlob): Promise<string> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.registerEmployee(arg0, arg1, arg2, arg3, arg4, await to_candid_ExternalBlob_n13(this._uploadFile, this._downloadFile, arg5));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.registerEmployee(arg0, arg1, arg2, arg3, arg4, await to_candid_ExternalBlob_n13(this._uploadFile, this._downloadFile, arg5));
+            return result;
+        }
+    }
+    async updateEmployee(arg0: string, arg1: string, arg2: string, arg3: bigint, arg4: string, arg5: ExternalBlob): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateEmployee(arg0, arg1, arg2, arg3, arg4, await to_candid_ExternalBlob_n13(this._uploadFile, this._downloadFile, arg5));
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateEmployee(arg0, arg1, arg2, arg3, arg4, await to_candid_ExternalBlob_n13(this._uploadFile, this._downloadFile, arg5));
             return result;
         }
     }
 }
-async function from_candid_AttendanceRecord_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _AttendanceRecord): Promise<AttendanceRecord> {
-    return await from_candid_record_n11(_uploadFile, _downloadFile, value);
+async function from_candid_Employee_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Employee): Promise<Employee> {
+    return await from_candid_record_n10(_uploadFile, _downloadFile, value);
 }
-async function from_candid_Employee_n14(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _Employee): Promise<Employee> {
-    return await from_candid_record_n15(_uploadFile, _downloadFile, value);
-}
-async function from_candid_ExternalBlob_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
+async function from_candid_ExternalBlob_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _ExternalBlob): Promise<ExternalBlob> {
     return await _downloadFile(value);
 }
 function from_candid__CaffeineStorageRefillResult_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: __CaffeineStorageRefillResult): _CaffeineStorageRefillResult {
@@ -373,52 +498,37 @@ function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Ar
 function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [bigint]): bigint | null {
     return value.length === 0 ? null : value[0];
 }
-async function from_candid_record_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    id: string;
-    status: string;
-    employeeName: string;
-    checkInTime: bigint;
-    employeeId: string;
-    photo: _ExternalBlob;
-    department: string;
-}): Promise<{
-    id: string;
-    status: string;
-    employeeName: string;
-    checkInTime: bigint;
-    employeeId: string;
-    photo: ExternalBlob;
-    department: string;
-}> {
-    return {
-        id: value.id,
-        status: value.status,
-        employeeName: value.employeeName,
-        checkInTime: value.checkInTime,
-        employeeId: value.employeeId,
-        photo: await from_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.photo),
-        department: value.department
-    };
+async function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_Employee]): Promise<Employee | null> {
+    return value.length === 0 ? null : await from_candid_Employee_n9(_uploadFile, _downloadFile, value[0]);
 }
-async function from_candid_record_n15(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+async function from_candid_record_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: string;
     name: string;
     createdAt: bigint;
+    employeeId: string;
+    faceDescriptor: string;
     photo: _ExternalBlob;
     department: string;
+    dailySalary: bigint;
 }): Promise<{
     id: string;
     name: string;
     createdAt: bigint;
+    employeeId: string;
+    faceDescriptor: string;
     photo: ExternalBlob;
     department: string;
+    dailySalary: bigint;
 }> {
     return {
         id: value.id,
         name: value.name,
         createdAt: value.createdAt,
-        photo: await from_candid_ExternalBlob_n12(_uploadFile, _downloadFile, value.photo),
-        department: value.department
+        employeeId: value.employeeId,
+        faceDescriptor: value.faceDescriptor,
+        photo: await from_candid_ExternalBlob_n11(_uploadFile, _downloadFile, value.photo),
+        department: value.department,
+        dailySalary: value.dailySalary
     };
 }
 function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
@@ -433,13 +543,10 @@ function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint
         topped_up_amount: record_opt_to_undefined(from_candid_opt_n7(_uploadFile, _downloadFile, value.topped_up_amount))
     };
 }
-async function from_candid_vec_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Employee>): Promise<Array<Employee>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_Employee_n14(_uploadFile, _downloadFile, x)));
+async function from_candid_vec_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_Employee>): Promise<Array<Employee>> {
+    return await Promise.all(value.map(async (x)=>await from_candid_Employee_n9(_uploadFile, _downloadFile, x)));
 }
-async function from_candid_vec_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_AttendanceRecord>): Promise<Array<AttendanceRecord>> {
-    return await Promise.all(value.map(async (x)=>await from_candid_AttendanceRecord_n10(_uploadFile, _downloadFile, x)));
-}
-async function to_candid_ExternalBlob_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
+async function to_candid_ExternalBlob_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: ExternalBlob): Promise<_ExternalBlob> {
     return await _uploadFile(value);
 }
 function to_candid__CaffeineStorageRefillInformation_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _CaffeineStorageRefillInformation): __CaffeineStorageRefillInformation {

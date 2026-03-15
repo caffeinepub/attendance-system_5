@@ -19,22 +19,38 @@ export const _CaffeineStorageRefillResult = IDL.Record({
   'success' : IDL.Opt(IDL.Bool),
   'topped_up_amount' : IDL.Opt(IDL.Nat),
 });
-export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const AttendanceRecord = IDL.Record({
   'id' : IDL.Text,
   'status' : IDL.Text,
-  'employeeName' : IDL.Text,
+  'date' : IDL.Text,
+  'note' : IDL.Text,
   'checkInTime' : IDL.Int,
   'employeeId' : IDL.Text,
-  'photo' : ExternalBlob,
-  'department' : IDL.Text,
 });
+export const SalaryPayment = IDL.Record({
+  'id' : IDL.Nat,
+  'note' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'paidDate' : IDL.Text,
+  'employeeId' : IDL.Text,
+  'amount' : IDL.Nat,
+});
+export const ExternalBlob = IDL.Vec(IDL.Nat8);
 export const Employee = IDL.Record({
   'id' : IDL.Text,
   'name' : IDL.Text,
   'createdAt' : IDL.Int,
+  'employeeId' : IDL.Text,
+  'faceDescriptor' : IDL.Text,
   'photo' : ExternalBlob,
   'department' : IDL.Text,
+  'dailySalary' : IDL.Nat,
+});
+export const Holiday = IDL.Record({
+  'id' : IDL.Nat,
+  'date' : IDL.Text,
+  'createdAt' : IDL.Int,
+  'reason' : IDL.Text,
 });
 
 export const idlService = IDL.Service({
@@ -65,38 +81,56 @@ export const idlService = IDL.Service({
     ),
   '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
   'addAttendanceRecord' : IDL.Func(
-      [IDL.Text, IDL.Text, IDL.Text, IDL.Int, ExternalBlob, IDL.Text],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text],
       [IDL.Text],
+      [],
+    ),
+  'addHoliday' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+  'addSalaryPayment' : IDL.Func(
+      [IDL.Text, IDL.Nat, IDL.Text, IDL.Text],
+      [IDL.Nat],
       [],
     ),
   'deleteAttendanceRecord' : IDL.Func([IDL.Text], [], []),
   'deleteEmployee' : IDL.Func([IDL.Text], [], []),
+  'deleteHoliday' : IDL.Func([IDL.Nat], [], []),
+  'deleteSalaryPayment' : IDL.Func([IDL.Nat], [], []),
   'getAllAttendanceRecords' : IDL.Func(
       [],
       [IDL.Vec(AttendanceRecord)],
       ['query'],
     ),
+  'getAllSalaryPayments' : IDL.Func([], [IDL.Vec(SalaryPayment)], ['query']),
   'getAttendanceByDate' : IDL.Func(
       [IDL.Text],
       [IDL.Vec(AttendanceRecord)],
       ['query'],
     ),
-  'getDailySummary' : IDL.Func(
+  'getAttendanceByEmployeeId' : IDL.Func(
       [IDL.Text],
-      [
-        IDL.Record({
-          'presentCount' : IDL.Nat,
-          'absentEmployees' : IDL.Vec(IDL.Text),
-          'lateCount' : IDL.Nat,
-        }),
-      ],
+      [IDL.Vec(AttendanceRecord)],
+      ['query'],
+    ),
+  'getEmployeeByEmployeeId' : IDL.Func(
+      [IDL.Text],
+      [IDL.Opt(Employee)],
+      ['query'],
+    ),
+  'getSalaryPaymentsByEmployee' : IDL.Func(
+      [IDL.Text],
+      [IDL.Vec(SalaryPayment)],
       ['query'],
     ),
   'listAllEmployees' : IDL.Func([], [IDL.Vec(Employee)], ['query']),
-  'listEmployeesByDepartment' : IDL.Func([], [IDL.Vec(Employee)], ['query']),
+  'listHolidays' : IDL.Func([], [IDL.Vec(Holiday)], ['query']),
   'registerEmployee' : IDL.Func(
-      [IDL.Text, IDL.Text, ExternalBlob],
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
       [IDL.Text],
+      [],
+    ),
+  'updateEmployee' : IDL.Func(
+      [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
+      [],
       [],
     ),
 });
@@ -115,22 +149,38 @@ export const idlFactory = ({ IDL }) => {
     'success' : IDL.Opt(IDL.Bool),
     'topped_up_amount' : IDL.Opt(IDL.Nat),
   });
-  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const AttendanceRecord = IDL.Record({
     'id' : IDL.Text,
     'status' : IDL.Text,
-    'employeeName' : IDL.Text,
+    'date' : IDL.Text,
+    'note' : IDL.Text,
     'checkInTime' : IDL.Int,
     'employeeId' : IDL.Text,
-    'photo' : ExternalBlob,
-    'department' : IDL.Text,
   });
+  const SalaryPayment = IDL.Record({
+    'id' : IDL.Nat,
+    'note' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'paidDate' : IDL.Text,
+    'employeeId' : IDL.Text,
+    'amount' : IDL.Nat,
+  });
+  const ExternalBlob = IDL.Vec(IDL.Nat8);
   const Employee = IDL.Record({
     'id' : IDL.Text,
     'name' : IDL.Text,
     'createdAt' : IDL.Int,
+    'employeeId' : IDL.Text,
+    'faceDescriptor' : IDL.Text,
     'photo' : ExternalBlob,
     'department' : IDL.Text,
+    'dailySalary' : IDL.Nat,
+  });
+  const Holiday = IDL.Record({
+    'id' : IDL.Nat,
+    'date' : IDL.Text,
+    'createdAt' : IDL.Int,
+    'reason' : IDL.Text,
   });
   
   return IDL.Service({
@@ -161,38 +211,56 @@ export const idlFactory = ({ IDL }) => {
       ),
     '_caffeineStorageUpdateGatewayPrincipals' : IDL.Func([], [], []),
     'addAttendanceRecord' : IDL.Func(
-        [IDL.Text, IDL.Text, IDL.Text, IDL.Int, ExternalBlob, IDL.Text],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Int, IDL.Text],
         [IDL.Text],
+        [],
+      ),
+    'addHoliday' : IDL.Func([IDL.Text, IDL.Text], [IDL.Nat], []),
+    'addSalaryPayment' : IDL.Func(
+        [IDL.Text, IDL.Nat, IDL.Text, IDL.Text],
+        [IDL.Nat],
         [],
       ),
     'deleteAttendanceRecord' : IDL.Func([IDL.Text], [], []),
     'deleteEmployee' : IDL.Func([IDL.Text], [], []),
+    'deleteHoliday' : IDL.Func([IDL.Nat], [], []),
+    'deleteSalaryPayment' : IDL.Func([IDL.Nat], [], []),
     'getAllAttendanceRecords' : IDL.Func(
         [],
         [IDL.Vec(AttendanceRecord)],
         ['query'],
       ),
+    'getAllSalaryPayments' : IDL.Func([], [IDL.Vec(SalaryPayment)], ['query']),
     'getAttendanceByDate' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(AttendanceRecord)],
         ['query'],
       ),
-    'getDailySummary' : IDL.Func(
+    'getAttendanceByEmployeeId' : IDL.Func(
         [IDL.Text],
-        [
-          IDL.Record({
-            'presentCount' : IDL.Nat,
-            'absentEmployees' : IDL.Vec(IDL.Text),
-            'lateCount' : IDL.Nat,
-          }),
-        ],
+        [IDL.Vec(AttendanceRecord)],
+        ['query'],
+      ),
+    'getEmployeeByEmployeeId' : IDL.Func(
+        [IDL.Text],
+        [IDL.Opt(Employee)],
+        ['query'],
+      ),
+    'getSalaryPaymentsByEmployee' : IDL.Func(
+        [IDL.Text],
+        [IDL.Vec(SalaryPayment)],
         ['query'],
       ),
     'listAllEmployees' : IDL.Func([], [IDL.Vec(Employee)], ['query']),
-    'listEmployeesByDepartment' : IDL.Func([], [IDL.Vec(Employee)], ['query']),
+    'listHolidays' : IDL.Func([], [IDL.Vec(Holiday)], ['query']),
     'registerEmployee' : IDL.Func(
-        [IDL.Text, IDL.Text, ExternalBlob],
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
         [IDL.Text],
+        [],
+      ),
+    'updateEmployee' : IDL.Func(
+        [IDL.Text, IDL.Text, IDL.Text, IDL.Nat, IDL.Text, ExternalBlob],
+        [],
         [],
       ),
   });
