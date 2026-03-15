@@ -1,0 +1,299 @@
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("/assets/fonts/BricolageGrotesque.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "General Sans";
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-weight: 200 700;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Deep navy enterprise dark theme */
+    --background: 0.12 0.02 255;
+    --foreground: 0.95 0.01 255;
+    --card: 0.16 0.025 255;
+    --card-foreground: 0.95 0.01 255;
+    --popover: 0.16 0.025 255;
+    --popover-foreground: 0.95 0.01 255;
+    --primary: 0.65 0.2 240;
+    --primary-foreground: 0.98 0 0;
+    --secondary: 0.2 0.025 255;
+    --secondary-foreground: 0.85 0.01 255;
+    --muted: 0.2 0.02 255;
+    --muted-foreground: 0.55 0.02 255;
+    --accent: 0.65 0.2 240;
+    --accent-foreground: 0.98 0 0;
+    --destructive: 0.6 0.2 25;
+    --destructive-foreground: 0.98 0 0;
+    --success: 0.65 0.18 145;
+    --success-foreground: 0.98 0 0;
+    --warning: 0.75 0.15 60;
+    --warning-foreground: 0.15 0.02 60;
+    --border: 0.22 0.025 255;
+    --input: 0.22 0.025 255;
+    --ring: 0.65 0.2 240;
+    --radius: 0.5rem;
+    --chart-1: 0.65 0.2 240;
+    --chart-2: 0.65 0.18 145;
+    --chart-3: 0.6 0.2 25;
+    --chart-4: 0.75 0.15 60;
+    --chart-5: 0.65 0.18 300;
+    --sidebar: 0.1 0.02 255;
+    --sidebar-foreground: 0.95 0.01 255;
+    --sidebar-primary: 0.65 0.2 240;
+    --sidebar-primary-foreground: 0.98 0 0;
+    --sidebar-accent: 0.18 0.025 255;
+    --sidebar-accent-foreground: 0.85 0.01 255;
+    --sidebar-border: 0.2 0.025 255;
+    --sidebar-ring: 0.65 0.2 240;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+    font-feature-settings: "kern" 1, "liga" 1;
+  }
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    @apply font-display;
+  }
+  /* Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: oklch(0.14 0.02 255);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: oklch(0.25 0.03 255);
+    border-radius: 3px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: oklch(0.35 0.04 255);
+  }
+}
+
+/* ── Dot-grid landing background ───────────────────────────────────── */
+.dot-grid {
+  background-color: oklch(0.12 0.02 255);
+  background-image: radial-gradient(
+    circle,
+    oklch(0.28 0.04 240 / 0.5) 1px,
+    transparent 1px
+  );
+  background-size: 28px 28px;
+}
+
+/* ── Scan-line animation ────────────────────────────────────────────── */
+@keyframes scan {
+  0% {
+    top: 0%;
+    opacity: 0.9;
+  }
+  48% {
+    opacity: 0.9;
+  }
+  50% {
+    opacity: 0.0;
+  }
+  52% {
+    opacity: 0.9;
+  }
+  100% {
+    top: 100%;
+    opacity: 0.9;
+  }
+}
+
+.scan-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    oklch(0.65 0.2 240 / 0.9),
+    oklch(0.65 0.18 145 / 0.6),
+    transparent
+  );
+  box-shadow: 0 0 8px oklch(0.65 0.2 240 / 0.8);
+  animation: scan 2.4s linear infinite;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* ── Corner bracket overlays ────────────────────────────────────────── */
+.bracket-corner {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-color: oklch(0.65 0.18 145);
+  border-style: solid;
+  border-width: 0;
+  z-index: 5;
+}
+.bracket-tl {
+  top: 10px;
+  left: 10px;
+  border-top-width: 2px;
+  border-left-width: 2px;
+}
+.bracket-tr {
+  top: 10px;
+  right: 10px;
+  border-top-width: 2px;
+  border-right-width: 2px;
+}
+.bracket-bl {
+  bottom: 10px;
+  left: 10px;
+  border-bottom-width: 2px;
+  border-left-width: 2px;
+}
+.bracket-br {
+  bottom: 10px;
+  right: 10px;
+  border-bottom-width: 2px;
+  border-right-width: 2px;
+}
+
+/* ── Pulsing dot ───────────────────────────────────────────────────── */
+@keyframes pulse-dot {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 oklch(0.65 0.18 145 / 0.6);
+  }
+  50% {
+    opacity: 0.6;
+    box-shadow: 0 0 0 5px oklch(0.65 0.18 145 / 0);
+  }
+}
+.pulse-dot {
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+/* ── Pulse blue ────────────────────────────────────────────────────── */
+@keyframes pulse-blue {
+  0%,
+  100% {
+    opacity: 1;
+    box-shadow: 0 0 0 0 oklch(0.65 0.2 240 / 0.6);
+  }
+  50% {
+    opacity: 0.7;
+    box-shadow: 0 0 0 5px oklch(0.65 0.2 240 / 0);
+  }
+}
+.pulse-blue {
+  animation: pulse-blue 2s ease-in-out infinite;
+}
+
+/* ── Slide-down access banner ──────────────────────────────────────── */
+@keyframes slide-down {
+  from {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.slide-down {
+  animation: slide-down 0.3s ease-out forwards;
+}
+
+/* ── Terminal-style glow input ─────────────────────────────────────── */
+.terminal-input {
+  background: oklch(0.1 0.02 255) !important;
+  border: 1px solid oklch(0.25 0.035 240) !important;
+  color: oklch(0.95 0.01 255) !important;
+  font-family: "JetBrains Mono", monospace;
+  letter-spacing: 0.04em;
+}
+.terminal-input:focus {
+  border-color: oklch(0.65 0.2 240) !important;
+  box-shadow: 0 0 0 2px oklch(0.65 0.2 240 / 0.2) !important;
+  outline: none;
+}
+
+/* ── Glowing primary button ────────────────────────────────────────── */
+.btn-glow {
+  background: oklch(0.65 0.2 240);
+  color: oklch(0.98 0 0);
+  box-shadow: 0 0 18px oklch(0.65 0.2 240 / 0.35);
+  transition: box-shadow 0.2s, transform 0.1s;
+}
+.btn-glow:hover {
+  box-shadow: 0 0 28px oklch(0.65 0.2 240 / 0.5);
+  transform: translateY(-1px);
+}
+.btn-glow:active {
+  transform: translateY(0);
+}
+
+/* ── Card hover ─────────────────────────────────────────────────────── */
+.card-hover {
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.card-hover:hover {
+  border-color: oklch(0.65 0.2 240 / 0.4) !important;
+  box-shadow: 0 0 24px oklch(0.65 0.2 240 / 0.1);
+}
+
+/* ── Stat card glow ─────────────────────────────────────────────────── */
+.stat-card-blue {
+  background: oklch(0.18 0.04 240);
+  border: 1px solid oklch(0.3 0.06 240);
+}
+.stat-card-green {
+  background: oklch(0.16 0.03 145);
+  border: 1px solid oklch(0.28 0.06 145);
+}
+.stat-card-red {
+  background: oklch(0.16 0.04 25);
+  border: 1px solid oklch(0.28 0.07 25);
+}
+.stat-card-amber {
+  background: oklch(0.18 0.04 60);
+  border: 1px solid oklch(0.3 0.07 60);
+}
+
+/* ── Table dark ─────────────────────────────────────────────────────── */
+.table-dark thead tr {
+  background: oklch(0.1 0.02 255);
+}
+.table-dark tbody tr {
+  border-bottom: 1px solid oklch(0.2 0.02 255);
+  transition: background 0.15s;
+}
+.table-dark tbody tr:hover {
+  background: oklch(0.18 0.03 255);
+}
+
+/* ── Status bar ─────────────────────────────────────────────────────── */
+.status-bar {
+  background: oklch(0.14 0.025 255);
+  border-top: 1px solid oklch(0.22 0.025 255);
+}
